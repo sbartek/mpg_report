@@ -5,18 +5,113 @@ date: "May 13th, 2015"
 output: rmarkdown::tufte_handout
 ---
 
+```{r}
+require('ggplot2')
+require('data.table')
+require('ggthemes')
+cs.dt <- data.table(mtcars)
+cs.dt$am <- as.factor(cs.dt$am)
+cs.dt$cyl <- as.factor(cs.dt$cyl)
+cs.dt$gear <- as.factor(cs.dt$gear)
+```
+
 # Introduction
+
+```{r, fig.margin = TRUE, fig.cap = "Sepal length vs. petal length, colored by species"}
+
+ggplot(cs.dt, aes(am, mpg)) +
+    geom_boxplot() +
+        theme_tufte() +
+            scale_x_discrete(labels=c("manual", "automatic"))
+```
+
 
 We investigate data that extracted from the 1974 _Motor Trend_ US
 magazine. They comprises fuel consumption and 10 aspects of automobile
 design and performance for 32 automobiles (1973-74 models). We are
 particularly interested in the following questions:
 
+```{r, fig.margin = TRUE, fig.cap = "Sepal length vs. petal length, colored by species"}
+
+ggplot(cs.dt, aes(wt, mpg, colour=am)) +
+    geom_point() +
+        geom_text(aes(label=cyl, colour=NULL), vjust=-0.6) +
+        theme_tufte() +
+            geom_smooth(method='lm')
+
+ggplot(cs.dt, aes(hp, mpg, colour=am)) +
+    geom_point() +
+        geom_text(aes(label=cyl, colour=NULL), vjust=-0.6) +
+        theme_tufte() +
+            geom_smooth(method='lm')
+
+ggplot(cs.dt, aes(hp, wt, colour=am)) +
+    geom_point() +
+        geom_text(aes(label=cyl, colour=NULL), vjust=-0.6) +
+        theme_tufte() +
+            geom_smooth(method='lm')
+
+
+ggplot(cs.dt, aes(disp, mpg, colour=am)) +
+    geom_point() +
+        theme_tufte() +
+            geom_smooth(method='lm')
+
+ggplot(cs.dt, aes(wt, disp, colour=am)) +
+    geom_point() +
+        theme_tufte() +
+            geom_smooth(method='lm')
+
+
+```
+
+
 * Is an automatic or manual transmission better for MPG?
 * Quantify the MPG difference between automatic and manual
   transmissions.
 
-# Headings
+
+# Is an automatic or manual transmission better for MPG?
+
+It seems so. 
+
+```{r}
+fit.wt <- lm(mpg ~ wt*am, data=cs.dt)
+summary(fit.wt)
+fit.hp <- lm(mpg ~ hp*am, data=cs.dt)
+summary(fit.hp)
+fit.hpwt <- lm(mpg ~ (hp+wt)*am, data=cs.dt)
+summary(fit.hpwt)
+
+
+
+fit2 <- lm(mpg ~ wt+hp, data=cs.dt)
+summary(fit2)
+
+
+fit1 <- lm(mpg ~ wt, data=cs.dt)
+fit <- lm(mpg ~ ., data=cs.dt)
+summary(fit)
+```
+
+# The MPG difference between automatic and manual transmissions
+
+```{r}
+wt.max <- max(cs.dt[am==1, wt])
+wt.min <- min(cs.dt[am==0, wt])
+wt.min
+cs.dt.res <- cs.dt[wt>=wt.min & wt<=wt.max]
+ggplot(cs.dt.res, aes(wt, mpg, colour=am)) +
+    geom_point() +
+        theme_tufte() +
+            geom_smooth(method='lm')
+
+ggplot(cs.dt.res, aes(am, mpg, colour=am)) +
+    geom_boxplot() +
+        theme_tufte() 
+
+
+```
 
 This style provides a- and b-heads (that is, `#` and `##`),
 demonstrated above.  An error is emitted if you try to use `###` and
