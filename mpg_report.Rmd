@@ -10,17 +10,28 @@ require('data.table')
 require('ggthemes')
 require('leaps')
 require('xtable')
+options(xtable.comment = FALSE)
+require('stargazer')
 
-
-cs.dt <- data.table(mtcars)
-cs.dt$am <- as.factor(cs.dt$am)
-cs.dt$cyl <- as.factor(cs.dt$cyl)
-cs.dt$gear <- as.factor(cs.dt$gear)
-cs.dt$vs <- as.factor(cs.dt$vs)
-cs.dt$carb <- as.factor(cs.dt$carb)
+mtcars.dt <- data.table(mtcars)
+mtcars.dt$am <- as.factor(mtcars.dt$am)
+mtcars.dt$cyl <- as.factor(mtcars.dt$cyl)
+mtcars.dt$gear <- as.factor(mtcars.dt$gear)
+mtcars.dt$vs <- as.factor(mtcars.dt$vs)
+mtcars.dt$carb <- as.factor(mtcars.dt$carb)
 ```
 
-# Introduction
+## Introduction
+
+```{r boxplot1, fig.margin = TRUE, fig.cap = "Automatic vs. manual transmission.", echo=FALSE}
+ggplot(mtcars.dt, aes(am, mpg)) + geom_boxplot() + theme_tufte() +
+            scale_x_discrete(labels=c("manual", "automatic"))
+```
+```{r WTGimpact, fig.margin = TRUE, fig.cap = "Impact of weight, transmission and number of cylinders on fuel consumption.", echo=FALSE}
+ggplot(mtcars.dt, aes(wt, mpg, colour=am)) + geom_point() + theme_tufte() +
+    geom_text(aes(label=cyl, colour=NULL), vjust=-0.6) +
+        geom_smooth(method='lm')
+```
 
 We investigate data that extracted from the 1974 _Motor Trend_ US
 magazine. They comprises fuel consumption and 10 aspects of automobile
@@ -31,29 +42,24 @@ particularly interested in the following questions:
 * Quantify the MPG difference between automatic and manual
   transmissions.
 
-```{r boxplot1, fig.margin = TRUE, fig.cap = "Automatic vs. manual transmission."}
-ggplot(cs.dt, aes(am, mpg)) + geom_boxplot() + theme_tufte() +
-            scale_x_discrete(labels=c("manual", "automatic"))
-```
-```{r WTGimpact, fig.margin = TRUE, fig.cap = "Impact of weight, transmission and number of cylinders on fuel consumption."}
-ggplot(cs.dt, aes(wt, mpg, colour=am)) + geom_point() + theme_tufte() +
-    geom_text(aes(label=cyl, colour=NULL), vjust=-0.6) +
-        geom_smooth(method='lm')
-```
 
 The boxplot on Figure 1 suggests that manual transmission is better
 for mpg. However, Figure 2 shows that actually weight or number of
-gears can be the most important factor.
+gears can be a most important factor. Let's see.
 
 
-# Model Selection
+## Model Selection
+
 
 Let us try to identify the subset of the predictors that can be
 related to the mpg response. For that we use `regsubsets` function
-from `leaps` library which select the best model with \(n\) predictors,
-for \(n=1 \ldots 8\). 
-```{r selection, results='asis'}
-regfit <- regsubsets(mpg~. ,cs.dt)
+from `leaps` library which select the best model with \(n\)
+predictors, for \(n=1 \ldots 8\). This way we can choose from quite
+large amount of models. Additionally in Appendix we show plots of
+few models with different sets of predictors.
+
+```{r selection, results='asis', message=FALSE, echo=FALSE, warning=FALSE}
+regfit <- regsubsets(mpg~. ,mtcars.dt)
 reg.summary <- summary(regfit)
 print(xtable(reg.summary$outmat), size="\\tiny")
 ```
@@ -67,14 +73,14 @@ best model with $n=1,..., 8$ predictors, we see that $n=5$ would be
 the best choice. Therefore our regression model is the following.
 
 ```{r 5predictors, results='asis'} 
-fit <- lm(mpg~ hp + wt + am + I(cyl==6) + I(vs==1), data=cs.dt)
+fit <- lm(mpg~ hp + wt + am + I(cyl==6) + I(vs==1), data=mtcars.dt)
 print(xtable(summary(fit)$coefficients),size="\\small")
 ```
 
 ## Is an automatic or manual transmission better for MPG?
 
 ```{r weightVsAm, fig.margin=TRUE, fig.cap="Boxplots of weight"}
-ggplot(cs.dt, aes(x=am,y=wt)) + geom_boxplot() + theme_tufte()
+ggplot(mtcars.dt, aes(x=am,y=wt)) + geom_boxplot() + theme_tufte()
 ```
 
 In my opinion the results are not conclusive. This regression model
@@ -88,36 +94,55 @@ transmission is automatic.
 ## The MPG difference between automatic and manual transmissions
 
 The difference is clearly visible on Figure 1. Let us do however
-_t-test_ to test if the difference in mean is significant. 
+_t-test_ to test if the difference in mean is significant.
+```{r twoGroup, results='asis'}
+g1 <- mtcars.dt[am==0,mpg]
+g2 <- mtcars.dt[am==1,mpg]
+t.test(g1, g2, paired=FALSE, var.equal=FALSE)
+```
+
+
 
 ## Appendix
 
-```{r, fig.width = 12, fig.height=10, fig.fullwidth = TRUE, fig.cap = "Full width figure"}
+```{r, fig.width = 12, fig.height=10, fig.fullwidth = TRUE, fig.cap = "Pairs figure."}
 
-pairs(cs.dt[,.(mpg,cyl, disp, hp, drat, wt, qsec, vs, am, gear, carb)], panel = panel.smooth)
+pairs(mtcars.dt[,.(mpg,cyl, disp, hp, drat, wt, qsec, vs, am, gear, carb)], panel = panel.smooth)
 ```
+
+```{r boxplot12, fig.cap = "Automatic vs. manual transmission."}
+ggplot(mtcars.dt, aes(am, mpg)) + geom_boxplot() + theme_tufte() +
+            scale_x_discrete(labels=c("manual", "automatic"))
+```
+```{r WTGimpact2, fig.cap = "Impact of weight, transmission and number of cylinders on fuel consumption."}
+ggplot(mtcars.dt, aes(wt, mpg, colour=am)) + geom_point() + theme_tufte() +
+    geom_text(aes(label=cyl, colour=NULL), vjust=-0.6) +
+        geom_smooth(method='lm')
+```
+
+
 
 ```{r, fig.cap = "Sepal length vs. petal length, colored by species"}
 
-ggplot(cs.dt, aes(hp, mpg, colour=am)) +
+ggplot(mtcars.dt, aes(hp, mpg, colour=am)) +
     geom_point() +
         geom_text(aes(label=cyl, colour=NULL), vjust=-0.6) +
         theme_tufte() +
             geom_smooth(method='lm')
 
-ggplot(cs.dt, aes(hp, wt, colour=am)) +
+ggplot(mtcars.dt, aes(hp, wt, colour=am)) +
     geom_point() +
         geom_text(aes(label=cyl, colour=NULL), vjust=-0.6) +
         theme_tufte() +
             geom_smooth(method='lm')
 
 
-ggplot(cs.dt, aes(disp, mpg, colour=am)) +
+ggplot(mtcars.dt, aes(disp, mpg, colour=am)) +
     geom_point() +
         theme_tufte() +
             geom_smooth(method='lm')
 
-ggplot(cs.dt, aes(wt, disp, colour=am)) +
+ggplot(mtcars.dt, aes(wt, disp, colour=am)) +
     geom_point() +
         theme_tufte() +
             geom_smooth(method='lm')
