@@ -1,6 +1,5 @@
 ---
-title: "Report on Fuel Consumption of automobiles from 1973-74"
-author: "Bartek Skorulski"
+title: "Report on Fuel Consumption of automobiles"
 date: "May 13th, 2015"
 output: rmarkdown::tufte_handout
 ---
@@ -9,7 +8,10 @@ output: rmarkdown::tufte_handout
 require('ggplot2')
 require('data.table')
 require('ggthemes')
-require(leaps)
+require('leaps')
+require('xtable')
+
+
 cs.dt <- data.table(mtcars)
 cs.dt$am <- as.factor(cs.dt$am)
 cs.dt$cyl <- as.factor(cs.dt$cyl)
@@ -18,7 +20,7 @@ cs.dt$vs <- as.factor(cs.dt$vs)
 cs.dt$carb <- as.factor(cs.dt$carb)
 ```
 
-## Introduction
+# Introduction
 
 We investigate data that extracted from the 1974 _Motor Trend_ US
 magazine. They comprises fuel consumption and 10 aspects of automobile
@@ -36,7 +38,7 @@ ggplot(cs.dt, aes(am, mpg)) + geom_boxplot() + theme_tufte() +
             scale_x_discrete(labels=c("manual", "automatic"))
 ```
 
-```{r WTGimpact, fig.margin = TRUE, fig.cap = "Impact of weight, transmission and number of gears on fuel consumption."}
+```{r WTGimpact, fig.margin = TRUE, fig.cap = "Impact of weight, transmission and number of cylinders on fuel consumption."}
 
 ggplot(cs.dt, aes(wt, mpg, colour=am)) + geom_point() + theme_tufte() +
     geom_text(aes(label=cyl, colour=NULL), vjust=-0.6) +
@@ -48,26 +50,39 @@ for mpg. However, Figure 2 shows that actually weight or number of
 gears can be the most important factor.
 
 
-## Subset Selection
+# Model Selection
 
 Let us try to identify the subset of the predictors that can be
-related to the mpg response. For that we use =regsubsets= function
-from leaps library.
+related to the mpg response. For that we use `regsubsets` function
+from `leaps` library which select the best model with \(n\) predictors,
+for \(n=1 \ldots 8\). 
 
-```{r} 
-nvmax <- 16
-regfit <- regsubsets(mpg~. ,cs.dt, nvmax =nvmax)
-
+```{r selection, results='asis'}
+regfit <- regsubsets(mpg~. ,cs.dt)
 reg.summary <- summary(regfit)
-reg.summary
+print(xtable(reg.summary$outmat), size="\\tiny")
+```
+
+```{r r2statistic, fig.margin=TRUE, fig.cap="$R^2$ statistic for the best model with $n=1,\\ldots, 8$."} 
+ggplot(data=NULL, aes(x=1:length(reg.summary$rsq), y=reg.summary$rsq)) +
+    geom_line() + theme_bw() +
+    labs(x='n', y="R2 statistic")
+```
+
+If we take a look at Figure 3 where we plot $R^2$ statistic for the
+best model with $n=1,..., 8$ predictors, we see that $n=5$ would be
+the best choice. Therefore our regression model is the following.
+
+```{r 5predictors, results='asis'} 
+fit <- lm(mpg~ hp + wt + am + I(cyl==6) + I(vs==1), data=cs.dt)
+print(xtable(summary(fit)$coefficients))
+```
+
+```{r}
 names(summary(regfit))
 reg.summary$rsq
 reg.summary$which
 
-plot(reg.summary$rsq, type='l')
-
-ggplot(data=NULL, aes(x=1:16, y=reg.summary$rsq)) + geom_line() +
-    theme_bw()
 
 ## plot(regfit.full ,scale ="r2")
 ## plot(regfit.full , scale ="adjr2") ## plot(regfit.full, scale ="Cp")
