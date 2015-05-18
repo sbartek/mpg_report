@@ -5,39 +5,85 @@ date: "May 13th, 2015"
 output: rmarkdown::tufte_handout
 ---
 
-```{r}
+```{r loads.libraries, echo=FALSE}
 require('ggplot2')
 require('data.table')
 require('ggthemes')
+require(leaps)
 cs.dt <- data.table(mtcars)
 cs.dt$am <- as.factor(cs.dt$am)
 cs.dt$cyl <- as.factor(cs.dt$cyl)
 cs.dt$gear <- as.factor(cs.dt$gear)
+cs.dt$vs <- as.factor(cs.dt$vs)
+cs.dt$carb <- as.factor(cs.dt$carb)
 ```
 
-# Introduction
-
-```{r, fig.margin = TRUE, fig.cap = "Sepal length vs. petal length, colored by species"}
-
-ggplot(cs.dt, aes(am, mpg)) +
-    geom_boxplot() +
-        theme_tufte() +
-            scale_x_discrete(labels=c("manual", "automatic"))
-```
-
+## Introduction
 
 We investigate data that extracted from the 1974 _Motor Trend_ US
 magazine. They comprises fuel consumption and 10 aspects of automobile
 design and performance for 32 automobiles (1973-74 models). We are
 particularly interested in the following questions:
 
-```{r, fig.margin = TRUE, fig.cap = "Sepal length vs. petal length, colored by species"}
+* Is an automatic or manual transmission better for MPG?
+* Quantify the MPG difference between automatic and manual
+  transmissions.
 
-ggplot(cs.dt, aes(wt, mpg, colour=am)) +
-    geom_point() +
-        geom_text(aes(label=cyl, colour=NULL), vjust=-0.6) +
-        theme_tufte() +
-            geom_smooth(method='lm')
+
+```{r boxplot1, fig.margin = TRUE, fig.cap = "Automatic vs. manual transmission."}
+
+ggplot(cs.dt, aes(am, mpg)) + geom_boxplot() + theme_tufte() +
+            scale_x_discrete(labels=c("manual", "automatic"))
+```
+
+```{r WTGimpact, fig.margin = TRUE, fig.cap = "Impact of weight, transmission and number of gears on fuel consumption."}
+
+ggplot(cs.dt, aes(wt, mpg, colour=am)) + geom_point() + theme_tufte() +
+    geom_text(aes(label=cyl, colour=NULL), vjust=-0.6) +
+        geom_smooth(method='lm')
+```
+
+The boxplot on Figure 1 suggests that manual transmission is better
+for mpg. However, Figure 2 shows that actually weight or number of
+gears can be the most important factor.
+
+
+## Subset Selection
+
+Let us try to identify the subset of the predictors that can be
+related to the mpg response. For that we use =regsubsets= function
+from leaps library.
+
+```{r} 
+nvmax <- 16
+regfit <- regsubsets(mpg~. ,cs.dt, nvmax =nvmax)
+
+reg.summary <- summary(regfit)
+reg.summary
+names(summary(regfit))
+reg.summary$rsq
+reg.summary$which
+
+plot(reg.summary$rsq, type='l')
+
+ggplot(data=NULL, aes(x=1:16, y=reg.summary$rsq)) + geom_line() +
+    theme_bw()
+
+## plot(regfit.full ,scale ="r2")
+## plot(regfit.full , scale ="adjr2") ## plot(regfit.full, scale ="Cp")
+
+fit.full <- lm(mpg~., data=cs.dt)
+summary(fit.full)
+fit.wt <- lm(mpg~wt*am, data=cs.dt)
+summary(fit.wt)
+fit.hp <- lm(mpg~hp*am, data=cs.dt)
+summary(fit.hp)
+fit.wthp <- lm(mpg~(hp+wt)*am, data=cs.dt)
+summary(fit.wthp)
+summary(fit.full)$coef
+```
+
+```{r, fig.margin = TRUE, fig.cap = "Sepal length vs. petal length, colored by species"}
 
 ggplot(cs.dt, aes(hp, mpg, colour=am)) +
     geom_point() +
@@ -66,9 +112,6 @@ ggplot(cs.dt, aes(wt, disp, colour=am)) +
 ```
 
 
-* Is an automatic or manual transmission better for MPG?
-* Quantify the MPG difference between automatic and manual
-  transmissions.
 
 
 # Is an automatic or manual transmission better for MPG?
@@ -111,6 +154,13 @@ ggplot(cs.dt.res, aes(am, mpg, colour=am)) +
         theme_tufte() 
 
 
+```
+
+## Appendix
+
+```{r, fig.width = 12, fig.height=10, fig.fullwidth = TRUE, fig.cap = "Full width figure"}
+
+pairs(cs.dt[,.(mpg,cyl, disp, hp, drat, wt, qsec, vs, am, gear, carb)], panel = panel.smooth)
 ```
 
 This style provides a- and b-heads (that is, `#` and `##`),
