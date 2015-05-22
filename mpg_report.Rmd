@@ -1,10 +1,9 @@
 ---
 title: "Report on Fuel Consumption of automobiles"
-date: "May 13th, 2015"
 output: rmarkdown::tufte_handout
 ---
 
-```{r loads.libraries, echo=FALSE}
+```{r loads.libraries, echo=FALSE, message=FALSE}
 require('ggplot2')
 require('gridExtra')
 require('data.table')
@@ -22,7 +21,7 @@ mtcars.dt$vs <- as.factor(mtcars.dt$vs)
 mtcars.dt$carb <- as.factor(mtcars.dt$carb)
 ```
 
-## Introduction
+# Introduction
 
 ```{r boxplot1, fig.margin = TRUE, fig.cap = "Automatic vs. manual transmission.", echo=FALSE}
 ggplot(mtcars.dt, aes(am, mpg)) + geom_boxplot() + theme_tufte() +
@@ -49,7 +48,7 @@ for mpg. However, Figure 2 shows that actually weight or number of
 gears can be a most important factor. Let's see.
 
 
-## Model Selection
+# Model Selection
 
 ```{r r2statistic, fig.margin=TRUE, fig.cap="$R^2$ statistic for the best model with $n=1,\\ldots, 8$.", echo=FALSE}
 regfit <- regsubsets(mpg~. ,mtcars.dt)
@@ -74,20 +73,39 @@ print(xtable(reg.summary$outmat), size="\\tiny")
 ```
 If we take a look at Figure 3 where we plot $R^2$ statistic for the
 best model with $n=1,..., 8$ predictors, we see that $n=5$ would be
-the best choice. Therefore our regression model is the following.
-
+the best choice. Therefore our regression model is the following has
+predictors horsepower (hp), weight (wt), manual transmission (am=1),
+six cylindes (cyl=6) and V/S (vs=1).
+```{r weightVsAm, fig.margin=TRUE, fig.cap="Boxplots of weight", echo=FALSE}
+ggplot(mtcars.dt, aes(x=am,y=wt)) + geom_boxplot() + theme_tufte()
+```
 ```{r 5predictors, results='asis', echo=FALSE} 
 fit <- lm(mpg~ hp + wt + am + I(cyl==6) + I(vs==1), data=mtcars.dt)
 print(xtable(summary(fit)$coefficients, digits = 4), size="\\small")
 ```
 
-## Conclusion
+
+# Conclusion
 **Is an automatic or manual transmission better for MPG?**
 
-```{r weightVsAm, fig.margin=TRUE, fig.cap="Boxplots of weight", echo=FALSE}
-ggplot(mtcars.dt, aes(x=am,y=wt)) + geom_boxplot() + theme_tufte()
+```{r mpgVsWt, fig.margin=TRUE, fig.cap="Relation beteewn mpg and weight", echo=FALSE}
+y <- mtcars$mpg
+x <- mtcars$wt
+fit <- lm(y~x)
+b0 <- coef(fit)[1]
+b1 <- coef(fit)[2]
+fit.fun <- function(t) {b0+b1*t}
+e <- y - fit.fun(x)
+ggplot(data=NULL, aes(x, y)) + geom_point() +
+    geom_smooth(method='lm') + theme_tufte()
 ```
 
+```{r ResmpgVsWt, fig.margin=TRUE, fig.cap="Residual plot for regresion beteewn mpg and weight", echo=FALSE}
+ggplot(data=NULL, aes(x,e)) + geom_point() +
+    geom_hline(yintercept=0) +
+        geom_pointrange(aes(ymin=pmin(e,0), ymax=pmax(e,0)))+
+        theme_tufte()
+```
 In my opinion the results are not conclusive. This regression model
 suggest that actually the most significant is characteristics are
 horsepower and weight. One can clearly see that the more heavy cars
@@ -98,20 +116,48 @@ transmission is automatic.
 
 **The MPG difference between automatic and manual transmissions**
 
+```{r mpgVsHp, fig.margin=TRUE, fig.cap="Relation beteewn mpg and horsepower", echo=FALSE}
+y <- mtcars$mpg
+x <- mtcars$hp
+fit <- lm(y~x)
+b0 <- coef(fit)[1]
+b1 <- coef(fit)[2]
+fit.fun <- function(t) {b0+b1*t}
+e <- y - fit.fun(x)
+ggplot(data=NULL, aes(x, y)) + geom_point() +
+    geom_smooth(method='lm') + theme_tufte()
+```
+
+```{r ResmpgVsHp, fig.margin=TRUE, fig.cap="Residual plot for regresion beteewn mpg and horsepower", echo=FALSE}
+ggplot(data=NULL, aes(x,e)) + geom_point() +
+    geom_hline(yintercept=0) +
+        geom_pointrange(aes(ymin=pmin(e,0), ymax=pmax(e,0)))+
+        theme_tufte()
+```
+
+
 The difference is clearly visible on Figure 1. Let us do however
 _t-test_ to test if the difference in mean is significant.
-```{r twoGroup}
+```{r twoGroup, echo=FALSE}
 g1 <- mtcars.dt[am==0,mpg]
 g2 <- mtcars.dt[am==1,mpg]
-t.test(g1, g2, paired=FALSE, var.equal=FALSE)
+t.test(mtcars[mtcars$am==0,1], mtcars[mtcars$am==1,1], paired=FALSE, var.equal=FALSE)
 ```
+
 Hence the difference in mean is significant, however _correlation does
 not imply causation_, and as we have mentioned above it is likely to
-be caused by other factors like weight and horsepower.
+be caused by other factors like weight and horsepower. For example,
+on Figure 5 we presented how mpg depends on weight and on Figure 6 the
+residual plot for the linear regression. And on the next figures we
+did the same for horsepower. These relations definitely make sense.
+
+The code of this file is available on my github:
+
+`https://github.com/sbartek/mpg_report`
 
 \newpage
 
-## Appendix
+# Appendix
 
 ```{r, fig.width = 12, fig.height=8, fig.fullwidth = TRUE, fig.cap = "Pairs figure."}
 pairs(mtcars.dt[,.(mpg,cyl, disp, hp, drat, wt, qsec, vs, am, gear, carb)], panel = panel.smooth)
@@ -136,7 +182,7 @@ ggplot(mtcars.dt, aes(hp, mpg, colour=am)) +
             geom_smooth(method='lm')
 ```
 
-```{r}
+```{r, fig.cap="Displacement vs. mpg"}
 ggplot(mtcars.dt, aes(disp, mpg, colour=am)) +
     geom_point() +
         theme.bartek +
