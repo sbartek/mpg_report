@@ -11,7 +11,7 @@ require('ggthemes')
 require('leaps')
 require('xtable')
 options(xtable.comment = FALSE)
-theme.bartek <- theme_bw()+theme(text=element_text(size=6))
+theme.bartek <- theme_bw()+theme(text=element_text(size=6), legend.position = "bottom")
 
 mtcars.dt <- data.table(mtcars)
 mtcars.dt$am <- as.factor(mtcars.dt$am)
@@ -23,17 +23,17 @@ mtcars.dt$carb <- as.factor(mtcars.dt$carb)
 
 # Introduction
 
-```{r boxplot1, fig.margin = TRUE, fig.cap = "Automatic vs. manual transmission.", echo=FALSE}
+```{r boxplot1, fig.margin = TRUE, fig.cap = "Automatic vs. manual.", echo=FALSE}
 ggplot(mtcars.dt, aes(am, mpg)) + geom_boxplot() + theme_tufte() +
             scale_x_discrete(labels=c("manual", "automatic"))
 ```
-```{r WTGimpact, fig.margin = TRUE, fig.cap = "Impact of weight, transmission and number of cylinders on fuel consumption.", echo=FALSE}
+```{r WTGimpact, fig.margin = TRUE, fig.cap = "Impact of weight, transmission and number of cylinders.", echo=FALSE}
 ggplot(mtcars.dt, aes(wt, mpg, colour=am)) + geom_point() + theme_tufte() +
     geom_text(aes(label=cyl, colour=NULL), vjust=-0.6) +
         geom_smooth(method='lm')
 ```
 
-We investigate data that extracted from the 1974 _Motor Trend_ US
+We investigate data extracted from the 1974 _Motor Trend_ US
 magazine. They comprises fuel consumption and 10 aspects of automobile
 design and performance for 32 automobiles (1973-74 models). We are
 particularly interested in the following questions:
@@ -50,7 +50,7 @@ gears can be a most important factor. Let's see.
 
 # Model Selection
 
-```{r r2statistic, fig.margin=TRUE, fig.cap="$R^2$ statistic for the best model with $n=1,\\ldots, 8$.", echo=FALSE}
+```{r r2statistic, fig.margin=TRUE, fig.cap="$R^2$ statistic for the best model for $n=1,\\ldots, 8$.", echo=FALSE}
 regfit <- regsubsets(mpg~. ,mtcars.dt)
 reg.summary <- summary(regfit)
 ggplot(data=NULL, aes(x=1:length(reg.summary$rsq), y=reg.summary$rsq)) +
@@ -60,22 +60,24 @@ ggplot(data=NULL, aes(x=1:length(reg.summary$rsq), y=reg.summary$rsq)) +
 
 
 Let us try to identify the subset of the predictors that can be
-related to the mpg response. For that we use `regsubsets` function
-from `leaps` library which select the best model with \(n\)
-predictors, for \(n=1 \ldots 8\). This way we can choose from quite
-large amount of models. Additionally in Appendix we show plots of
-few models with different sets of predictors.
+related to the mpg response. For each \(n=1 \ldots 8\) we select the
+best model with \(n\) predictors. And then comparing $R^2$ statistics
+we try to select \(n\).
 
+For that we use `regsubsets` function
+from `leaps` R library. These are the results.
 
 
 ```{r selection, results='asis', message=FALSE, echo=FALSE, warning=FALSE}
 print(xtable(reg.summary$outmat), size="\\tiny")
 ```
-If we take a look at Figure 3 where we plot $R^2$ statistic for the
-best model with $n=1,..., 8$ predictors, we see that $n=5$ would be
+If we take a look at Figure 3 (where we plot $R^2$ statistic)
+we see that $n=5$ would be
 the best choice. Therefore our regression model is the following has
 predictors horsepower (hp), weight (wt), manual transmission (am=1),
-six cylindes (cyl=6) and V/S (vs=1).
+six cylindes (cyl=6) and V/S (vs=1). And the regression coefficients are
+given in the following table.
+
 ```{r weightVsAm, fig.margin=TRUE, fig.cap="Boxplots of weight", echo=FALSE}
 ggplot(mtcars.dt, aes(x=am,y=wt)) + geom_boxplot() + theme_tufte()
 ```
@@ -107,12 +109,12 @@ ggplot(data=NULL, aes(x,e)) + geom_point() +
         theme_tufte()
 ```
 In my opinion the results are not conclusive. This regression model
-suggest that actually the most significant is characteristics are
-horsepower and weight. One can clearly see that the more heavy cars
+suggest that actually the most significant characteristics are
+horsepower and weight. One can clearly sees that the heavier cars
 have automatic transmission (Figure 4). This could be an effect of
 that economic car (in the sense of price) are smaller and tends to
 have manual transmission while luxury cars are bigger and its
-transmission is automatic.
+transmission is automatic in general.
 
 **The MPG difference between automatic and manual transmissions**
 
@@ -159,34 +161,31 @@ The code of this file is available on my github:
 
 # Appendix
 
-```{r, fig.width = 12, fig.height=8, fig.fullwidth = TRUE, fig.cap = "Pairs figure."}
+```{r, fig.width = 12, fig.height=8, fig.fullwidth = TRUE, fig.cap = "Pairs figure. Here one sees how strongly the variables are corealted with each other."}
 pairs(mtcars.dt[,.(mpg,cyl, disp, hp, drat, wt, qsec, vs, am, gear, carb)], panel = panel.smooth)
 ```
 
-```{r boxplot12, fig.height=2, fig.cap = "Fuel consumption. Automatic vs. manual transmission and impact of weight, transmission and number of cylinders.", fig.fullwidth = TRUE}
-p1 <- ggplot(mtcars.dt, aes(am, mpg)) + geom_boxplot() +
-    theme.bartek + scale_x_discrete(labels=c("manual", "automatic"))
-p2 <- ggplot(mtcars.dt, aes(wt, mpg, colour=am)) + geom_point()+
-    theme.bartek + theme(legend.position="none") +
-    geom_text(aes(label=cyl, colour=NULL), vjust=-0.6, size=2) +
-        geom_smooth(method='lm')
-grid.arrange(p1, p2, ncol=2)
-```
-
-
-```{r, fig.cap = "Horsepower vs. mpg"}
-ggplot(mtcars.dt, aes(hp, mpg, colour=am)) +
+```{r, fig.fullwidth = TRUE, fig.cap = "Horsepower vs. weight.  If we remove two cars that have manual transmission but 8 cylinders (probably sport cars) there is almost no interaction between weight and type of transmission."}
+g1 <- ggplot(mtcars.dt, aes(wt, hp, colour=am)) +
     geom_point() +
-        geom_text(aes(label=cyl, colour=NULL), vjust=-0.6) +
+        geom_text(aes(label=cyl, colour=NULL), vjust=-0.6, size=1.5) +
+        theme.bartek +
+            geom_smooth(method='lm') 
+g2 <- ggplot(mtcars.dt[!(cyl==8 & am==1)], aes(wt, hp, colour=am)) +
+    geom_point() +
+        geom_text(aes(label=cyl, colour=NULL), vjust=-0.6, size=1.5) +
         theme.bartek +
             geom_smooth(method='lm')
+grid.arrange(g1, g2, ncol=2)
 ```
 
-```{r, fig.cap="Displacement vs. mpg"}
+
+
+```{r, fig.cap="Displacement vs. mpg. Almost no interaccion with transmition type."}
 ggplot(mtcars.dt, aes(disp, mpg, colour=am)) +
     geom_point() +
         theme.bartek +
-            geom_smooth(method='lm')
+            geom_smooth(method='lm') 
 
 ```
 
