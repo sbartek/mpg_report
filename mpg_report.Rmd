@@ -45,7 +45,7 @@ particularly interested in the following questions:
 
 The boxplot on Figure 1 suggests that manual transmission is better
 for mpg. However, Figure 2 shows that actually weight or number of
-gears can be a most important factor. Let's see.
+cylinders can be a most important factor. Let's see.
 
 
 # Model Selection
@@ -90,7 +90,7 @@ print(xtable(summary(fit)$coefficients, digits = 4), size="\\small")
 # Conclusion
 **Is an automatic or manual transmission better for MPG?**
 
-```{r mpgVsWt, fig.margin=TRUE, fig.cap="Relation beteewn mpg and weight", echo=FALSE}
+```{r mpgVsWt, fig.margin=TRUE, fig.cap="Relation between mpg and weight", echo=FALSE}
 y <- mtcars$mpg
 x <- mtcars$wt
 fit <- lm(y~x)
@@ -102,7 +102,7 @@ ggplot(data=NULL, aes(x, y)) + geom_point() +
     geom_smooth(method='lm') + theme_tufte()
 ```
 
-```{r ResmpgVsWt, fig.margin=TRUE, fig.cap="Residual plot for regresion beteewn mpg and weight", echo=FALSE}
+```{r ResmpgVsWt, fig.margin=TRUE, fig.cap="Residual plot for regresion between mpg and weight", echo=FALSE}
 ggplot(data=NULL, aes(x,e)) + geom_point() +
     geom_hline(yintercept=0) +
         geom_pointrange(aes(ymin=pmin(e,0), ymax=pmax(e,0)))+
@@ -118,7 +118,7 @@ transmission is automatic in general.
 
 **The MPG difference between automatic and manual transmissions**
 
-```{r mpgVsHp, fig.margin=TRUE, fig.cap="Relation beteewn mpg and horsepower", echo=FALSE}
+```{r mpgVsHp, fig.margin=TRUE, fig.cap="Relation between mpg and horsepower", echo=FALSE}
 y <- mtcars$mpg
 x <- mtcars$hp
 fit <- lm(y~x)
@@ -130,7 +130,7 @@ ggplot(data=NULL, aes(x, y)) + geom_point() +
     geom_smooth(method='lm') + theme_tufte()
 ```
 
-```{r ResmpgVsHp, fig.margin=TRUE, fig.cap="Residual plot for regresion beteewn mpg and horsepower", echo=FALSE}
+```{r ResmpgVsHp, fig.margin=TRUE, fig.cap="Residual plot for regresion between mpg and horsepower", echo=FALSE}
 ggplot(data=NULL, aes(x,e)) + geom_point() +
     geom_hline(yintercept=0) +
         geom_pointrange(aes(ymin=pmin(e,0), ymax=pmax(e,0)))+
